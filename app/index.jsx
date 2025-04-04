@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, TouchableOpacity, Image, StyleSheet, BackHandler } from "react-native";
-import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
-import * as ImagePicker from "expo-image-picker";
+import { View, Text, TouchableOpacity, Image, StyleSheet, BackHandler, Animated } from "react-native";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import * as ImagePicker from 'expo-image-picker';
 import axios from "axios";
 
 const PlantCamera = () => {
@@ -9,6 +9,27 @@ const PlantCamera = () => {
   const cameraRef = useRef(null);
   const [facing, setFacing] = useState('back');
   const [permission, requestPermission] = useCameraPermissions();
+
+  // Animated values for fading and sliding animations
+  const fadingOut = useRef(new Animated.Value(1)).current; // for fade-out animation
+  const position = useRef(new Animated.Value(0)).current; // for slide-out animation
+
+  // Handle back button press to cancel image preview
+  // and return to camera view
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        if (image) {
+          setImage(null); // Cancel image preview
+          return true;     // Prevent default back behavior
+        }
+        return false;
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [image]);
 
   if (!permission) {
     // Camera permissions are still loading.
@@ -37,14 +58,15 @@ const PlantCamera = () => {
   };
 
   const pickImage = async () => {
+    console.log("Picking image from gallery...");
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       quality: 1,
     });
 
     if (!result.canceled) {
-      setImage(result.uri);
+      setImage(result.assets[0].uri);
     }
   };
 
@@ -73,6 +95,27 @@ const PlantCamera = () => {
     }
   };
 
+  // Animation for image preview
+const cancelImagePreview = () => {
+    // Fade and slide out animation
+    Animated.parallel([
+      Animated.timing(fadingOut, {
+        toValue: 0, // Fade out
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(position, {
+        toValue: 200, // Slide out of view
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setImage(null); // Reset image after animation
+      fadingOut.setValue(1); // Reset fade
+      position.setValue(0); // Reset position
+    });
+  };
+
   return (
     <View style={styles.container}>
       {!image ? (
@@ -87,12 +130,20 @@ const PlantCamera = () => {
           </View>
         </CameraView>
       ) : (
-        <>
+        <Animated.View
+          style={[
+            styles.previewContainer,
+            {
+              opacity: fadingOut,
+              transform: [{ translateY: position }],
+            },
+          ]}
+        >
           <Image source={{ uri: image }} style={styles.preview} />
           <TouchableOpacity onPress={() => setImage(null)} style={styles.cancelButton}>
             <Text style={styles.buttonText}>❌</Text>
           </TouchableOpacity>
-        </>
+        </Animated.View>
       )}
 
       <View style={styles.actions}>
@@ -115,6 +166,11 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     paddingBottom: 20,
     alignItems: "center",
+  },
+  previewContainer: {
+    width: "100%",
+    alignItems: "center",
+    justifyContent: "center",
   },
   captureButton: { backgroundColor: "#fff", padding: 15, borderRadius: 50 },
   buttonText: { fontSize: 18, fontWeight: "bold" },
