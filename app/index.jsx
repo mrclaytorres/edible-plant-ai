@@ -10,6 +10,23 @@ const PlantCamera = () => {
   const [facing, setFacing] = useState('back');
   const [permission, requestPermission] = useCameraPermissions();
 
+  // Handle back button press to cancel image preview
+  // and return to camera view
+  useEffect(() => {
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        if (image) {
+          setImage(null); // Cancel image preview
+          return true;     // Prevent default back behavior
+        }
+        return false;
+      }
+    );
+
+    return () => backHandler.remove();
+  }, [image]);
+
   if (!permission) {
     // Camera permissions are still loading.
     return <View />;
