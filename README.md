@@ -1,6 +1,4 @@
-# Welcome to your Expo app 👋
-
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+# Edible Plant AI
 
 ## Get started
 
@@ -35,16 +33,34 @@ npm run reset-project
 
 This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
 
-## Learn more
+## How to use Expo Go App When Using WSL2 On Your Project
 
-To learn more about developing your project with Expo, look at the following resources:
+1. Ensure Your Phone and PC Are on the Same Network
+Your mobile phone must be on the same Wi-Fi network as your Windows machine. WSL2 runs in a virtual environment, so network bridging is key.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+2. Find Your Windows Host IP (Not WSL IP)
+WSL has its own IP and can’t be accessed directly by your mobile. Instead, you need to use your Windows host machine IP.  
+	
+    In Windows, open PowerShell and run:  
+  	`> ipconfig`
 
-## Join the community
+3. Configure Expo to Use Your Windows Host IP  
+	
+    Open your Expo project in WSL2, then create or edit `.expo/settings.json`:  
+    ```
+    {
+      "hostType": "lan"
+    }
+    ```
 
-Join our community of developers creating universal apps.
+4. Use Tunnel Mode (Slower but Reliable)  
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+	Then, in the WSL terminal, run:  
+  `> EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0 npx expo start --tunnel`
+
+  	Now you can scan the QR code or type in the address of the app in your Expo Go App:  
+  	e.g. `exp://4fposes-anonymous-8081.exp.direct`
+
+  	This uses Expo’s servers as a proxy and works even if LAN networking is problematic.
+
+  	Note: You can disable your firewall temporarily if it won't connect

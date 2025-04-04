@@ -1,0 +1,137 @@
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text, TouchableOpacity, Image, StyleSheet, BackHandler } from "react-native";
+import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
+import * as ImagePicker from "expo-image-picker";
+import axios from "axios";
+
+const PlantCamera = () => {
+  const [image, setImage] = useState(null);
+  const cameraRef = useRef(null);
+  const [facing, setFacing] = useState('back');
+  const [permission, requestPermission] = useCameraPermissions();
+
+  if (!permission) {
+    // Camera permissions are still loading.
+    return <View />;
+  }
+
+  if (!permission.granted) {
+    // Camera permissions are not granted yet.
+    return (
+      <View style={styles.container}>
+        <Text style={styles.message}>We need your permission to show the camera</Text>
+        <Button onPress={requestPermission} title="grant permission" />
+      </View>
+    );
+  }
+
+  function toggleCameraFacing() {
+    setFacing(current => (current === 'back' ? 'front' : 'back'));
+  }
+
+  const takePicture = async () => {
+    if (cameraRef.current) {
+      const photo = await cameraRef.current.takePictureAsync();
+      setImage(photo.uri);
+    }
+  };
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaType.Images,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setImage(result.uri);
+    }
+  };
+
+  const uploadImage = async () => {
+    if (!image) return;
+
+    let formData = new FormData();
+    formData.append("file", {
+      uri: image,
+      name: "plant.jpg",
+      type: "image/jpeg",
+    });
+
+    try {
+      const response = await axios.post(
+        "https://your-backend-url.com/upload",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+      alert(`Plant Identified: ${response.data.plant_name}`);
+    } catch (error) {
+      console.error("Upload Error:", error);
+      alert("Error identifying plant.");
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      {!image ? (
+        <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity onPress={takePicture} style={styles.captureButton}>
+              <Text style={styles.buttonText}>📸</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
+              <Text style={styles.text}>Flip Camera</Text>
+            </TouchableOpacity>
+          </View>
+        </CameraView>
+      ) : (
+        <>
+          <Image source={{ uri: image }} style={styles.preview} />
+          <TouchableOpacity onPress={() => setImage(null)} style={styles.cancelButton}>
+            <Text style={styles.buttonText}>❌</Text>
+          </TouchableOpacity>
+        </>
+      )}
+
+      <View style={styles.actions}>
+        <TouchableOpacity onPress={pickImage} style={styles.button}>
+          <Text style={styles.buttonText}>📁 Choose from Gallery</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={uploadImage} style={styles.button}>
+          <Text style={styles.buttonText}>🌿 Identify Plant</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: "center", alignItems: "center" },
+  camera: { flex: 1, width: "100%" },
+  buttonContainer: {
+    flex: 1,
+    justifyContent: "flex-end",
+    paddingBottom: 20,
+    alignItems: "center",
+  },
+  captureButton: { backgroundColor: "#fff", padding: 15, borderRadius: 50 },
+  buttonText: { fontSize: 18, fontWeight: "bold" },
+  preview: { width: "100%", height: 400, resizeMode: "contain" },
+  actions: { flexDirection: "row", marginTop: 20 },
+  button: {
+    backgroundColor: "#4CAF50",
+    padding: 10,
+    margin: 10,
+    borderRadius: 5,
+  },
+  cancelButton: {
+    backgroundColor: "transparent",
+    padding: 10,
+    margin: 10,
+    borderRadius: 5,
+  },
+});
+
+export default PlantCamera;
