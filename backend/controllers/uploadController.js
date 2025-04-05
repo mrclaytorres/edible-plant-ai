@@ -53,6 +53,7 @@ const handleUpload = async (req, res) => {
     res.json({
       plant_name: predictionData.plant_name,
       scientific_name: predictionData.scientific_name,
+      edible: predictionData.edible
     });
   } catch (error) {
     console.error("Upload error:", error);
