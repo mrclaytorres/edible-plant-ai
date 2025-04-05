@@ -3,6 +3,7 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 const plantRoutes = require("./routes/plantRoutes");
 const app = express();
+require('dotenv').config();
 
 const corsOptions = {
   origin: '*', // allow all origins
@@ -14,7 +15,7 @@ app.use(express.json());
 app.use("/api/plants", plantRoutes);
 
 // Connect to MongoDB
-mongoose.connect("mongodb://localhost:27017/plantAI", {
+mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 }).then(() => console.log("MongoDB connected"));
