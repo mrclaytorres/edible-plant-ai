@@ -1,21 +1,63 @@
-const Plant = require('../models/PlantImage');
+const path = require("path");
+const Plant = require("../models/PlantImage");
+const { spawn } = require("child_process");
+const preprocessImage = require("../utils/preprocessImage");
+require('dotenv').config();
 
 const handleUpload = async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+  if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
-  const imagePath = req.file.path;
+  try {
+    const originalPath = req.file.path;
+    // Process predection using PyThorch
 
-  // TODO: AI processing / TensorFlow Lite later
-  const fakePrediction = 'Bamboo';
+    // Use path.resolve to make sure this is absolute and OS-safe
+    const predictScriptPath = path.resolve(__dirname, "../../ai/predict.py");
 
-  const plant = new Plant({
-    imagePath,
-    plantName: fakePrediction,
-    uploadDate: new Date(),
-  });
+    const processedImagePath = await preprocessImage(originalPath);
+    const python = spawn(process.env.PYTHONPATH, [predictScriptPath, processedImagePath]);
 
-  await plant.save();
-  res.json({ plant_name: fakePrediction });
+    let result = "";
+    python.stdout.on("data", (data) => {
+      result += data.toString();
+    });
+
+    python.stderr.on("data", (data) => {
+      console.error("Python error:", data.toString());
+    });
+
+    const predictionData = await new Promise((resolve, reject) => {
+      python.on("close", (code) => {
+        if (code !== 0) {
+          reject(new Error(`Python process exited with code ${code}`));
+        } else {
+          try {
+            resolve(JSON.parse(result));
+          } catch (e) {
+            reject(new Error("Failed to parse prediction result"));
+          }
+        }
+      });
+    });
+
+    const plant = new Plant({
+      imagePath: originalPath,
+      plantName: predictionData.plant_name,
+      scientificName: predictionData.scientific_name,
+      identified: true,
+      edible: predictionData.edible,
+      uploadDate: new Date(),
+    });
+
+    await plant.save();
+    res.json({
+      plant_name: predictionData.plant_name,
+      scientific_name: predictionData.scientific_name,
+    });
+  } catch (error) {
+    console.error("Upload error:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
+  }
 };
 
 module.exports = { handleUpload };
