@@ -64,3 +64,6 @@ WSL has its own IP and can’t be accessed directly by your mobile. Instead, you
   	This uses Expo’s servers as a proxy and works even if LAN networking is problematic.
 
   	Note: You can disable your firewall temporarily if it won't connect
+
+### Alternative Setup with for WSL + Expo Go Users (Recommended)
+Just follow this tutorial: [Expo QR code on Windows Subsystem for Linux (WSL2)](https://dev.to/alecell/expo-qr-code-on-windows-subsystem-for-linux-wsl2-1bjf)
