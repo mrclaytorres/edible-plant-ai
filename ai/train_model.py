@@ -69,7 +69,7 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Train Loop
-for epoch in range(5):  # adjust as needed
+for epoch in range(20):  # adjust as needed
   for inputs, labels in train_loader:
     inputs, labels = inputs.to(device), labels.to(device)
 
