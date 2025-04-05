@@ -91,10 +91,19 @@ const PlantCamera = () => {
         }
       );
       console.log(response.data);
-      alert(`Plant Identified: ${response.data.plant_name}`);
+      alert(
+        `🌿 Plant Identified: ${response.data.plant_name}\n` +
+        `🔬 Scientific Name: ${response.data.scientific_name}\n` +
+        `🍽️ Edible: ${response.data.edible ? "Yes" : "No"}`
+      );
+      // Reset image after successful upload
+      cancelImagePreview();
     } catch (error) {
       console.error("Upload Error:", error);
-      alert("Error identifying plant.");
+      alert(
+        `❌ Error Identifying Plant\n` +
+        `Please try again or upload a clearer image.`
+      );
     }
   };
 

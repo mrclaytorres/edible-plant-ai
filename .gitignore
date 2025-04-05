@@ -103,3 +103,7 @@ app-example
 # 3D Images
 *.3dm
 *.max
+dataset/*
+!dataset
+class_map.json
+model.pt
