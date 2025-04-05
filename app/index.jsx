@@ -72,22 +72,25 @@ const PlantCamera = () => {
 
   const uploadImage = async () => {
     if (!image) return;
-
+    console.log("Uploading image...", image);
     let formData = new FormData();
     formData.append("file", {
       uri: image,
       name: "plant.jpg",
       type: "image/jpeg",
     });
+    console.log("FormData:", formData);
 
     try {
+      console.log("Sending request to server...");
       const response = await axios.post(
-        "https://your-backend-url.com/upload",
+        "http://192.168.1.2:5000/api/plants/upload",
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
         }
       );
+      console.log(response.data);
       alert(`Plant Identified: ${response.data.plant_name}`);
     } catch (error) {
       console.error("Upload Error:", error);
@@ -140,7 +143,7 @@ const cancelImagePreview = () => {
           ]}
         >
           <Image source={{ uri: image }} style={styles.preview} />
-          <TouchableOpacity onPress={() => setImage(null)} style={styles.cancelButton}>
+          <TouchableOpacity onPress={cancelImagePreview} style={styles.cancelButton}>
             <Text style={styles.buttonText}>❌</Text>
           </TouchableOpacity>
         </Animated.View>

@@ -64,3 +64,19 @@ WSL has its own IP and can’t be accessed directly by your mobile. Instead, you
   	This uses Expo’s servers as a proxy and works even if LAN networking is problematic.
 
   	Note: You can disable your firewall temporarily if it won't connect
+
+### Alternative Setup with for WSL + Expo Go Users (Recommended)
+Just follow this tutorial: [Expo QR code on Windows Subsystem for Linux (WSL2)](https://dev.to/alecell/expo-qr-code-on-windows-subsystem-for-linux-wsl2-1bjf)
+
+1. This tutorial lets you open your WSL ports so that it can be access to external devices.
+2. Your endpoints will use the Windows IP moving forward.  
+	E.g.  
+    ```
+		const response = await axios.post(
+          "http://192.XXX.X.X:5000/api/plants/upload",
+          formData,
+          {
+            headers: { "Content-Type": "multipart/form-data" },
+          }
+      	);
+    ```
