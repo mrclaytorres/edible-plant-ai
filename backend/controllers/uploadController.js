@@ -1,6 +1,8 @@
+const path = require("path");
 const Plant = require("../models/PlantImage");
 const { spawn } = require("child_process");
 const preprocessImage = require("../utils/preprocessImage");
+require('dotenv').config();
 
 const handleUpload = async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
@@ -8,8 +10,12 @@ const handleUpload = async (req, res) => {
   try {
     const originalPath = req.file.path;
     // Process predection using PyThorch
+
+    // Use path.resolve to make sure this is absolute and OS-safe
+    const predictScriptPath = path.resolve(__dirname, "../../ai/predict.py");
+
     const processedImagePath = await preprocessImage(originalPath);
-    const python = spawn("python3", ["predict.py", processedImagePath]);
+    const python = spawn(process.env.PYTHONPATH, [predictScriptPath, processedImagePath]);
 
     let result = "";
     python.stdout.on("data", (data) => {
