@@ -1,15 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity, Image, StyleSheet, BackHandler, Animated } from "react-native";
-import { CameraView, useCameraPermissions } from "expo-camera";
 import * as ImagePicker from 'expo-image-picker';
 import axios from "axios";
+import CameraViewComponent from "../components/CameraView"; // Import the CameraView component
 
 const PlantCamera = () => {
   const [image, setImage] = useState(null);
-  const cameraRef = useRef(null);
-  const [facing, setFacing] = useState('back');
-  const [permission, requestPermission] = useCameraPermissions();
-
+  
   // Animated values for fading and sliding animations
   const fadingOut = useRef(new Animated.Value(1)).current; // for fade-out animation
   const position = useRef(new Animated.Value(0)).current; // for slide-out animation
@@ -30,32 +27,6 @@ const PlantCamera = () => {
 
     return () => backHandler.remove();
   }, [image]);
-
-  if (!permission) {
-    // Camera permissions are still loading.
-    return <View />;
-  }
-
-  if (!permission.granted) {
-    // Camera permissions are not granted yet.
-    return (
-      <View style={styles.container}>
-        <Text style={styles.message}>We need your permission to show the camera</Text>
-        <Button onPress={requestPermission} title="grant permission" />
-      </View>
-    );
-  }
-
-  function toggleCameraFacing() {
-    setFacing(current => (current === 'back' ? 'front' : 'back'));
-  }
-
-  const takePicture = async () => {
-    if (cameraRef.current) {
-      const photo = await cameraRef.current.takePictureAsync();
-      setImage(photo.uri);
-    }
-  };
 
   const pickImage = async () => {
     console.log("Picking image from gallery...");
@@ -108,7 +79,7 @@ const PlantCamera = () => {
   };
 
   // Animation for image preview
-const cancelImagePreview = () => {
+  const cancelImagePreview = () => {
     // Fade and slide out animation
     Animated.parallel([
       Animated.timing(fadingOut, {
@@ -128,19 +99,15 @@ const cancelImagePreview = () => {
     });
   };
 
+  // This gets called by the child to send the image URI up
+  const handleCapture = (uri) => {
+    setImage(uri);
+  };
+
   return (
     <View style={styles.container}>
       {!image ? (
-        <CameraView style={styles.camera} facing={facing} ref={cameraRef}>
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity onPress={takePicture} style={styles.captureButton}>
-              <Text style={styles.buttonText}>📸</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
-              <Text style={styles.text}>Flip Camera</Text>
-            </TouchableOpacity>
-          </View>
-        </CameraView>
+        <CameraViewComponent onCapture={handleCapture} />
       ) : (
         <Animated.View
           style={[
@@ -172,19 +139,11 @@ const cancelImagePreview = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: "center", alignItems: "center" },
-  camera: { flex: 1, width: "100%" },
-  buttonContainer: {
-    flex: 1,
-    justifyContent: "flex-end",
-    paddingBottom: 20,
-    alignItems: "center",
-  },
   previewContainer: {
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
   },
-  captureButton: { backgroundColor: "#fff", padding: 15, borderRadius: 50 },
   buttonText: { fontSize: 18, fontWeight: "bold" },
   preview: { width: "100%", height: 400, resizeMode: "contain" },
   actions: { flexDirection: "row", marginTop: 20 },
