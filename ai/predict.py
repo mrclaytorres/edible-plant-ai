@@ -9,7 +9,7 @@ import json
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Load model and class mapping using absolute paths
-model_path = os.path.join(BASE_DIR, "model.pt")
+model_path = os.path.join(BASE_DIR, "model_weights.pt")
 class_map_path = os.path.join(BASE_DIR, "class_map.json")
 
 # Load model (replace with your actual model path)
