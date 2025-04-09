@@ -11,6 +11,7 @@ PLANT_INFO = {
     "basil": {"scientific_name": "Ocimum basilicum", "edible": True},
     "mint": {"scientific_name": "Mentha", "edible": True},
     "bamboo": {"scientific_name": "Bambusa vulgaris", "edible": False},
+    "bougainvillea": {"scientific_name": "Bougainvillea glabra", "edible": False},
     # Add more plants as needed
 }
 
