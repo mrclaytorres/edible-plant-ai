@@ -7,6 +7,12 @@ const PlantImageSchema = new mongoose.Schema({
   scientificName: String,
   identified: { type: Boolean, default: false },
   edible: { type: Boolean, default: false },
+  correctedLabel: {
+    plantName: String,
+    scientificName: String,
+    edible: Boolean,
+    confirmed: { type: Boolean, default: false },
+  }
 });
 
 module.exports = mongoose.model("PlantImage", PlantImageSchema);
