@@ -51,6 +51,7 @@ const handleUpload = async (req, res) => {
 
     await plant.save();
     res.json({
+      id: plant._id,
       plant_name: predictionData.plant_name,
       scientific_name: predictionData.scientific_name,
       edible: predictionData.edible
