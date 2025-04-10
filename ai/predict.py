@@ -2,7 +2,7 @@ import os
 import sys
 from PIL import Image
 import torch
-from torchvision import transforms
+from torchvision import transforms, models
 import json
 
 # Get the directory of the current script
@@ -12,9 +12,14 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 model_path = os.path.join(BASE_DIR, "model_weights.pt")
 class_map_path = os.path.join(BASE_DIR, "class_map.json")
 
-# Load model (replace with your actual model path)
+# Setup device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = torch.load(model_path, map_location=device)
+
+# Instantiate the model architecture (make sure it matches your training script)
+model = models.resnet50(pretrained=False)
+model.fc = torch.nn.Linear(model.fc.in_features, len(json.load(open(class_map_path))))
+model.load_state_dict(torch.load(model_path, map_location=device))
+model.to(device)
 model.eval()
 
 # Sample class index to plant name mapping

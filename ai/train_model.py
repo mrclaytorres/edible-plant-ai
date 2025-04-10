@@ -12,6 +12,7 @@ PLANT_INFO = {
     "mint": {"scientific_name": "Mentha", "edible": True},
     "bamboo": {"scientific_name": "Bambusa vulgaris", "edible": False},
     "bougainvillea": {"scientific_name": "Bougainvillea glabra", "edible": False},
+    "sweet potato": {"scientific_name": "Ipomoea batatas", "edible": True},
     # Add more plants as needed
 }
 

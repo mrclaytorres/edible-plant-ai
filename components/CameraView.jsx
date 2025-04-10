@@ -17,7 +17,7 @@ const CameraViewComponent = ({onCapture}) => {
     return (
       <View style={styles.container}>
         <Text style={styles.message}>We need your permission to show the camera</Text>
-        <Button onPress={requestPermission} title="grant permission" />
+        <TouchableOpacity onPress={requestPermission} title="grant permission"><Text style={styles.message}>Grant Permission</Text></TouchableOpacity>
       </View>
     );
   }

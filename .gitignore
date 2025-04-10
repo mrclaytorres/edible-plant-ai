@@ -106,4 +106,5 @@ app-example
 dataset/*
 !dataset
 class_map.json
-model.pt
+*.pt
+.idea*
