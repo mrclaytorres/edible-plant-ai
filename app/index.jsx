@@ -55,7 +55,7 @@ const PlantCamera = () => {
     try {
       console.log("Sending request to server...");
       const response = await axios.post(
-        "http://192.168.1.2:5000/api/plants/upload",
+        "http://192.168.1.9:5000/api/plants/upload",
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
