@@ -1,13 +1,14 @@
+const fs = require("fs");
 const path = require("path");
 const Plant = require("../models/PlantImage");
-const { spawn } = require("child_process");
 require("dotenv").config();
 
 const handleCorrection = async (req, res) => {
   const { id, plantName, scientificName, edible } = req.body;
-
+  console.log('req.body', req.body);
   try {
     const plant = await Plant.findById(id);
+    console.log("Plant image found", plant)
     if (!plant) return res.status(404).json({ error: "Image not found" });
 
     plant.correctedLabel = {
@@ -19,26 +20,24 @@ const handleCorrection = async (req, res) => {
 
     await plant.save();
 
-    // Use path.resolve to make sure this is absolute and OS-safe
-    const correctionScriptPath = path.resolve(__dirname, "../../ai/retrain.py");
+    // Save image and correction to ai/corrections
+    const correctionsDir = path.join(__dirname, "../../ai/corrections");
+    if (!fs.existsSync(correctionsDir)) fs.mkdirSync(correctionsDir);
 
-    const python = spawn(process.env.PYTHONPATH, [correctionScriptPath]);
+    const ext = path.extname(plant.imagePath); // e.g., .jpg
+    const fileName = `${id}${ext}`;
+    const jsonName = `${id}.json`;
 
-    python.stdout.on("data", (data) =>
-      console.log("Retrain:", data.toString())
-    );
-    python.stderr.on("data", (data) =>
-      console.error("Retrain Error:", data.toString())
-    );
+    const destImg = path.join(correctionsDir, fileName);
+    const destJson = path.join(correctionsDir, jsonName);
 
-    python.on("close", (code) => {
-      if (code === 0) console.log("Model retrained successfully");
-    });
+    fs.copyFileSync(plant.imagePath, destImg); // Copy image
+    fs.writeFileSync(destJson, JSON.stringify({ plant_name: plantName }, null, 2));
 
     res.json({
-      plant_name: predictionData.plant_name,
-      scientific_name: predictionData.scientific_name,
-      edible: predictionData.edible,
+      plant_name: plantName,
+      scientific_name: scientificName,
+      edible: edible,
       message: "Correction submitted successfully",
     });
     

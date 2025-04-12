@@ -1,12 +1,18 @@
 import React, { useState } from "react";
-import { View, TextInput, Button, Text, Switch } from "react-native";
+import { View, TextInput, Button, Text, Switch, Image } from "react-native";
 
-const CorrectionForm = ({ imageId, onSubmitted }) => {
+const CorrectionForm = ({ imageId, plantImage, onSubmitted }) => {
   const [plantName, setPlantName] = useState("");
   const [scientificName, setScientificName] = useState("");
   const [edible, setEdible] = useState(false);
-
   const submitCorrection = async () => {
+    console.log('data',{
+      imageId,
+      plantName,
+      scientificName,
+      edible
+    })
+    
     try {
       const res = await fetch("http://192.168.1.9:5000/api/plants/correct", {
         method: "POST",
@@ -37,6 +43,9 @@ const CorrectionForm = ({ imageId, onSubmitted }) => {
   return (
     <View style={{ marginTop: 20 }}>
       <Text>Submit Correct Plant Info:</Text>
+      {plantImage && (
+        <Image source={{ uri: plantImage }} style={{ width: 200, height: 200, marginBottom: 10 }} />
+      )}
       <TextInput placeholder="Plant Name" value={plantName} onChangeText={setPlantName} />
       <TextInput placeholder="Scientific Name" value={scientificName} onChangeText={setScientificName} />
       <View style={{ flexDirection: "row", alignItems: "center" }}>

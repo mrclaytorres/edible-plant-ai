@@ -74,8 +74,9 @@ const PlantCamera = () => {
         }
       );
       console.log(response.data);
+      const plantData = response.data
       // After uploading:
-      setImageId(response.id);
+      setImageId(plantData.id);
       Alert.alert(
         "🌿 Plant Identified",
         `🔬 Scientific Name: ${response.data.scientific_name}\n🍽️ Edible: ${
@@ -157,6 +158,12 @@ const PlantCamera = () => {
       {showCorrectionForm && (
         <View style={styles.previewContainer}>
           <CorrectionForm imageId={imageId} onSubmitted={() => setShowCorrectionForm(false)} />
+          <TouchableOpacity
+            onPress={() => setShowCorrectionForm(false)}
+            style={styles.cancelButton}
+          >
+            <Text style={styles.buttonText}>❌</Text>
+          </TouchableOpacity>
         </View>
       )}
       <View style={styles.actions}>
