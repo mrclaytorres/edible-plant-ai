@@ -71,31 +71,33 @@ class CorrectionDataset(Dataset):
     return image, label
 
 # === Step 3: Load model and adjust for new classes ===
-num_classes = len(existing_map)
-model = models.resnet50(pretrained=False)
-
-# Load existing weights if available
-weights_path = os.path.join(script_dir, "model_weights.pt")
-if os.path.exists(weights_path):
-  # Load previous final layer size
-  with open(class_map_path) as f:
-    old_class_map = json.load(f)
-  old_num_classes = len(old_class_map)
-
-  model.fc = torch.nn.Linear(model.fc.in_features, old_num_classes)
-  model.load_state_dict(torch.load(weights_path))
-
-# Replace final layer with new size
-model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
-
-model.train()
-
-# === Step 4: Train on new data ===
 dataset = CorrectionDataset(corrections_dir)
 if len(dataset) == 0:
   print("No new correction data found.")
   exit()
 
+# Recalculate class count based on updated map
+with open(class_map_path) as f:
+  updated_class_map = json.load(f)
+num_classes = len(updated_class_map)
+
+# === Load model and adjust for new classes ===
+model = models.resnet50(pretrained=False)
+
+# Load existing weights if available
+weights_path = os.path.join(script_dir, "model_weights.pt")
+if os.path.exists(weights_path):
+  # Load using previous fc shape
+  state_dict = torch.load(weights_path)
+  old_num_classes = state_dict['fc.weight'].shape[0]
+  model.fc = torch.nn.Linear(model.fc.in_features, old_num_classes)
+  model.load_state_dict(state_dict)
+
+# Replace final layer with new size
+model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
+model.train()
+
+# === Step 4: Train on new data ===
 loader = DataLoader(dataset, batch_size=4, shuffle=True)
 
 criterion = torch.nn.CrossEntropyLoss()
