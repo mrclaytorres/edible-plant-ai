@@ -17,10 +17,6 @@ if os.path.exists(class_map_path):
 else:
   existing_map = {}
 
-# Reverse map: plant name (lowercased) to class index
-name_to_id = {v["plant_name"].lower(): int(k) for k, v in existing_map.items()}
-next_id = max(name_to_id.values(), default=-1) + 1
-
 # === Step 2: Custom Dataset for new corrections ===
 class CorrectionDataset(Dataset):
   def __init__(self, folder):
@@ -29,6 +25,13 @@ class CorrectionDataset(Dataset):
       transforms.Resize((224, 224)),
       transforms.ToTensor()
     ])
+    
+    # Reverse map: plant name (lowercased) to class index
+    name_to_id = {}
+    for k, v in existing_map.items():
+      name_to_id[v["plant_name"].lower()] = int(k)
+
+    next_id = max(name_to_id.values(), default=-1) + 1
 
     for file in os.listdir(folder):
       if file.endswith(".jpg") or file.endswith(".png"):
@@ -118,19 +121,19 @@ processed_dir = os.path.join(corrections_dir, "processed")
 os.makedirs(processed_dir, exist_ok=True)
 
 for img_path, _ in dataset.samples:
-    img_filename = os.path.basename(img_path)
-    json_filename = img_filename.replace(".jpg", ".json").replace(".png", ".json")
+  img_filename = os.path.basename(img_path)
+  json_filename = img_filename.replace(".jpg", ".json").replace(".png", ".json")
 
-    img_dest = os.path.join(processed_dir, img_filename)
-    json_dest = os.path.join(processed_dir, json_filename)
+  img_dest = os.path.join(processed_dir, img_filename)
+  json_dest = os.path.join(processed_dir, json_filename)
 
-    # Move image file
-    if os.path.exists(img_path):
-        shutil.move(img_path, img_dest)
+  # Move image file
+  if os.path.exists(img_path):
+    shutil.move(img_path, img_dest)
 
-    # Move JSON label file
-    original_json_path = os.path.join(corrections_dir, json_filename)
-    if os.path.exists(original_json_path):
-        shutil.move(original_json_path, json_dest)
+  # Move JSON label file
+  original_json_path = os.path.join(corrections_dir, json_filename)
+  if os.path.exists(original_json_path):
+    shutil.move(original_json_path, json_dest)
 
 print("✅ Processed correction files moved to 'corrections/processed/'.")
