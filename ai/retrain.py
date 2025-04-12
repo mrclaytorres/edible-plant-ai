@@ -50,7 +50,7 @@ class CorrectionDataset(Dataset):
           name_to_id[plant_name] = next_id
           existing_map[str(next_id)] = {
             "plant_name": label_data["plant_name"],
-            "scientific_name": label_data.get("scientific_name", "Updated"),
+            "scientific_name": label_data.get("scientific_name", ""),
             "edible": label_data.get("edible", True)
           }
           next_id += 1
