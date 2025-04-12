@@ -14,6 +14,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use("/api/plants", plantRoutes);
+console.log("Scheduled retraining now running...")
 scheduleRetrain(); // Start the scheduled job
 
 // Connect to MongoDB

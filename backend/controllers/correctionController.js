@@ -32,7 +32,7 @@ const handleCorrection = async (req, res) => {
     const destJson = path.join(correctionsDir, jsonName);
 
     fs.copyFileSync(plant.imagePath, destImg); // Copy image
-    fs.writeFileSync(destJson, JSON.stringify({ plant_name: plantName }, null, 2));
+    fs.writeFileSync(destJson, JSON.stringify({ plant_name: plantName, scientific_name: scientificName, edible: edible }, null, 2));
 
     res.json({
       plant_name: plantName,

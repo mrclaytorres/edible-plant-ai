@@ -79,7 +79,7 @@ const PlantCamera = () => {
       setImageId(plantData.id);
       Alert.alert(
         "🌿 Plant Identified",
-        `🔬 Scientific Name: ${response.data.scientific_name}\n🍽️ Edible: ${
+        `📋Plant Name: ${response.data.plant_name}\n🔬 Scientific Name: ${response.data.scientific_name}\n🍽️ Edible: ${
           response.data.edible ? "Yes" : "No"
         }`,
         [
