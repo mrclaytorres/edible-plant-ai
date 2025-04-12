@@ -4,6 +4,7 @@ from torch.utils.data import Dataset, DataLoader
 from PIL import Image
 import os
 import json
+import shutil
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 corrections_dir = os.path.join(script_dir, "corrections")
@@ -111,3 +112,25 @@ for epoch in range(5):
 # === Step 5: Save updated weights ===
 torch.save(model.state_dict(), weights_path)
 print("✅ Model updated and saved.")
+
+# === Step 6: Move processed corrections ===
+processed_dir = os.path.join(corrections_dir, "processed")
+os.makedirs(processed_dir, exist_ok=True)
+
+for img_path, _ in dataset.samples:
+    img_filename = os.path.basename(img_path)
+    json_filename = img_filename.replace(".jpg", ".json").replace(".png", ".json")
+
+    img_dest = os.path.join(processed_dir, img_filename)
+    json_dest = os.path.join(processed_dir, json_filename)
+
+    # Move image file
+    if os.path.exists(img_path):
+        shutil.move(img_path, img_dest)
+
+    # Move JSON label file
+    original_json_path = os.path.join(corrections_dir, json_filename)
+    if os.path.exists(original_json_path):
+        shutil.move(original_json_path, json_dest)
+
+print("✅ Processed correction files moved to 'corrections/processed/'.")
