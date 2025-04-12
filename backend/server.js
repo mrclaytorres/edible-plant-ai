@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const plantRoutes = require("./routes/plantRoutes");
 const app = express();
 require('dotenv').config();
+const scheduleRetrain = require("./scheduler/retrainScheduler"); // Use to schedule model retraining
 
 const corsOptions = {
   origin: '*', // allow all origins
@@ -13,6 +14,8 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use("/api/plants", plantRoutes);
+console.log("Scheduled retraining now running...")
+scheduleRetrain(); // Start the scheduled job
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, {

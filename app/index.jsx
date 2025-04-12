@@ -1,12 +1,24 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, TouchableOpacity, Image, StyleSheet, BackHandler, Animated } from "react-native";
-import * as ImagePicker from 'expo-image-picker';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  BackHandler,
+  Animated,
+  Alert,
+} from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 import CameraViewComponent from "../components/CameraView"; // Import the CameraView component
+import CorrectionForm from "@/components/CorrectionForm";
 
 const PlantCamera = () => {
   const [image, setImage] = useState(null);
-  
+  const [showCorrectionForm, setShowCorrectionForm] = useState(false);
+  const [imageId, setImageId] = useState(null);
+
   // Animated values for fading and sliding animations
   const fadingOut = useRef(new Animated.Value(1)).current; // for fade-out animation
   const position = useRef(new Animated.Value(0)).current; // for slide-out animation
@@ -19,7 +31,7 @@ const PlantCamera = () => {
       () => {
         if (image) {
           setImage(null); // Cancel image preview
-          return true;     // Prevent default back behavior
+          return true; // Prevent default back behavior
         }
         return false;
       }
@@ -31,7 +43,7 @@ const PlantCamera = () => {
   const pickImage = async () => {
     console.log("Picking image from gallery...");
     let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ["images"],
       allowsEditing: true,
       quality: 1,
     });
@@ -62,10 +74,26 @@ const PlantCamera = () => {
         }
       );
       console.log(response.data);
-      alert(
-        `🌿 Plant Identified: ${response.data.plant_name}\n` +
-        `🔬 Scientific Name: ${response.data.scientific_name}\n` +
-        `🍽️ Edible: ${response.data.edible ? "Yes" : "No"}`
+      const plantData = response.data
+      // After uploading:
+      setImageId(plantData.id);
+      Alert.alert(
+        "🌿 Plant Identified",
+        `📋Plant Name: ${response.data.plant_name}\n🔬 Scientific Name: ${response.data.scientific_name}\n🍽️ Edible: ${
+          response.data.edible ? "Yes" : "No"
+        }`,
+        [
+          {
+            text: "Not Correct",
+            onPress: () => setShowCorrectionForm(true),
+            style: "destructive",
+          },
+          {
+            text: "OK",
+            onPress: () => cancelImagePreview(),
+          },
+        ],
+        { cancelable: false }
       );
       // Reset image after successful upload
       cancelImagePreview();
@@ -73,7 +101,7 @@ const PlantCamera = () => {
       console.error("Upload Error:", error);
       alert(
         `❌ Error Identifying Plant\n` +
-        `Please try again or upload a clearer image.`
+          `Please try again or upload a clearer image.`
       );
     }
   };
@@ -119,12 +147,25 @@ const PlantCamera = () => {
           ]}
         >
           <Image source={{ uri: image }} style={styles.preview} />
-          <TouchableOpacity onPress={cancelImagePreview} style={styles.cancelButton}>
+          <TouchableOpacity
+            onPress={cancelImagePreview}
+            style={styles.cancelButton}
+          >
             <Text style={styles.buttonText}>❌</Text>
           </TouchableOpacity>
         </Animated.View>
       )}
-
+      {showCorrectionForm && (
+        <View style={styles.previewContainer}>
+          <CorrectionForm imageId={imageId} plantImage={image} onSubmitted={() => setShowCorrectionForm(false)} />
+          <TouchableOpacity
+            onPress={() => setShowCorrectionForm(false)}
+            style={styles.cancelButton}
+          >
+            <Text style={styles.buttonText}>❌</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       <View style={styles.actions}>
         <TouchableOpacity onPress={pickImage} style={styles.button}>
           <Text style={styles.buttonText}>📁 Choose from Gallery</Text>
