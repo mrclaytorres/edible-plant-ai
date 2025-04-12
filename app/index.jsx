@@ -157,7 +157,7 @@ const PlantCamera = () => {
       )}
       {showCorrectionForm && (
         <View style={styles.previewContainer}>
-          <CorrectionForm imageId={imageId} onSubmitted={() => setShowCorrectionForm(false)} />
+          <CorrectionForm imageId={imageId} plantImage={image} onSubmitted={() => setShowCorrectionForm(false)} />
           <TouchableOpacity
             onPress={() => setShowCorrectionForm(false)}
             style={styles.cancelButton}

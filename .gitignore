@@ -108,3 +108,5 @@ dataset/*
 class_map.json
 *.pt
 .idea*
+ai/corrections/*
+!corrections

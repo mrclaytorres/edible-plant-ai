@@ -12,6 +12,7 @@ const PlantImageSchema = new mongoose.Schema({
     scientificName: String,
     edible: Boolean,
     confirmed: { type: Boolean, default: false },
+    retrained: { type: Boolean, default: false },
   }
 });
 
