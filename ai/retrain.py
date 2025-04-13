@@ -93,9 +93,18 @@ if os.path.exists(weights_path):
   model.fc = torch.nn.Linear(model.fc.in_features, old_num_classes)
   model.load_state_dict(state_dict)
 
-# Replace final layer with new size
+# === Freeze all layers ===
+for param in model.parameters():
+  param.requires_grad = False
+
+# === Replace final layer with new size and unfreeze it ===
 model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
-model.train()
+for param in model.fc.parameters():
+  param.requires_grad = True
+
+# Move model to device AFTER modifying fc
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
 
 # === Step 4: Train on new data ===
 loader = DataLoader(dataset, batch_size=4, shuffle=True)
@@ -106,6 +115,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 for epoch in range(5):
   running_loss = 0.0
   for inputs, labels in loader:
+    inputs, labels = inputs.to(device), labels.to(device)
     optimizer.zero_grad()
     outputs = model(inputs)
     loss = criterion(outputs, labels)
