@@ -110,3 +110,4 @@ class_map.json
 .idea*
 ai/corrections/*
 !corrections
+*.keystore
