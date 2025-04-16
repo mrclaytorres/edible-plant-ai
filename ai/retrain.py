@@ -1,10 +1,11 @@
 import torch
 from torchvision import models, transforms
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 from PIL import Image
 import os
 import json
 import shutil
+from collections import Counter
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 corrections_dir = os.path.join(script_dir, "corrections")
@@ -104,15 +105,17 @@ for name, param in model.named_parameters():
 
 # === Replace final layer with new size and unfreeze it ===
 model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
-for param in model.fc.parameters():
-  param.requires_grad = True
 
 # Move model to device AFTER modifying fc
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
-# === Step 4: Train on new data ===
-loader = DataLoader(dataset, batch_size=4, shuffle=True)
+# === Step 4: Balanced Sampling ===
+labels = [label for _, label in dataset.samples]
+class_counts = Counter(labels)
+weights = [1.0 / class_counts[label] for label in labels]
+sampler = WeightedRandomSampler(weights, len(weights))
+loader = DataLoader(dataset, batch_size=4, sampler=sampler)
 
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
