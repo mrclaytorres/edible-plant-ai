@@ -111,3 +111,5 @@ class_map.json
 ai/corrections/*
 !corrections
 *.keystore
+ai/replay_buffer/*
+!replay_buffer
