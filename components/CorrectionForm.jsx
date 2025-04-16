@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { View, TextInput, Button, Text, Switch, Image } from "react-native";
+import Constants from "expo-constants";
+
+const BASE_API_URI = Constants.expoConfig.extra.BASE_API_URI;
 
 const CorrectionForm = ({ imageId, plantImage, onSubmitted }) => {
   const [plantName, setPlantName] = useState("");
@@ -14,7 +17,7 @@ const CorrectionForm = ({ imageId, plantImage, onSubmitted }) => {
     })
     
     try {
-      const res = await fetch("http://192.168.1.9:5000/api/plants/correct", {
+      const res = await fetch(`${BASE_API_URI}/api/plants/correct`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
