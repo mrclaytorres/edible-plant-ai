@@ -13,6 +13,9 @@ import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 import CameraViewComponent from "../components/CameraView"; // Import the CameraView component
 import CorrectionForm from "@/components/CorrectionForm";
+import Constants from "expo-constants";
+
+const BASE_API_URI = Constants.expoConfig.extra.BASE_API_URI;
 
 const PlantCamera = () => {
   const [image, setImage] = useState(null);
@@ -67,7 +70,7 @@ const PlantCamera = () => {
     try {
       console.log("Sending request to server...");
       const response = await axios.post(
-        "http://192.168.1.9:5000/api/plants/upload",
+        `${BASE_API_URI}/api/plants/upload`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
