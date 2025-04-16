@@ -117,8 +117,9 @@ weights = [1.0 / class_counts[label] for label in labels]
 sampler = WeightedRandomSampler(weights, len(weights))
 loader = DataLoader(dataset, batch_size=4, sampler=sampler)
 
+# === Step 5: Train ===
 criterion = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-4)
 
 for epoch in range(5):
   running_loss = 0.0
@@ -132,25 +133,28 @@ for epoch in range(5):
     running_loss += loss.item()
   print(f"Epoch {epoch+1}: Loss = {running_loss:.4f}")
 
-# === Step 5: Save updated weights ===
+# === Step 6: Save weights ===
 torch.save(model.state_dict(), weights_path)
 print("✅ Model updated and saved.")
 
-# === Step 6: Move processed corrections ===
+# === Step 7: Move processed corrections ===
 processed_dir = os.path.join(corrections_dir, "processed")
 os.makedirs(processed_dir, exist_ok=True)
-
+ 
 for img_path, _ in dataset.samples:
+  
+  if corrections_dir not in img_path:
+    continue
+  
   img_filename = os.path.basename(img_path)
   json_filename = img_filename.replace(".jpg", ".json").replace(".png", ".json")
-
   img_dest = os.path.join(processed_dir, img_filename)
   json_dest = os.path.join(processed_dir, json_filename)
-
+  
   # Move image file
   if os.path.exists(img_path):
     shutil.move(img_path, img_dest)
-
+    
   # Move JSON label file
   original_json_path = os.path.join(corrections_dir, json_filename)
   if os.path.exists(original_json_path):
