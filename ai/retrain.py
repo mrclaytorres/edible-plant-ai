@@ -1,6 +1,6 @@
 import torch
 from torchvision import models, transforms
-from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
+from torch.utils.data import Dataset, DataLoader
 from PIL import Image
 import os
 import json
@@ -74,12 +74,14 @@ class CorrectionDataset(Dataset):
     return image, label
 
 # === Step 3: Load model and adjust for new classes ===
-dataset = CorrectionDataset([corrections_dir, replay_dir])
-if len(dataset) == 0:
-  print("No new correction data found.")
-  exit()
+correction_dataset = CorrectionDataset([corrections_dir])
+replay_dataset = CorrectionDataset([replay_dir])
 
-# Recalculate class count based on updated map
+if len(correction_dataset) + len(replay_dataset) == 0:
+	print("No correction or replay data found.")
+	exit()
+
+# === Step 4: Load model and adjust for new classes ===
 with open(class_map_path) as f:
   updated_class_map = json.load(f)
 num_classes = len(updated_class_map)
@@ -90,74 +92,90 @@ model = models.resnet50(pretrained=True)
 # Load existing weights if available
 weights_path = os.path.join(script_dir, "model_weights.pt")
 if os.path.exists(weights_path):
-  # Load using previous fc shape
-  state_dict = torch.load(weights_path)
-  old_num_classes = state_dict['fc.weight'].shape[0]
-  model.fc = torch.nn.Linear(model.fc.in_features, old_num_classes)
-  model.load_state_dict(state_dict)
+	# Load using previous fc shape
+	state_dict = torch.load(weights_path)
+	old_num_classes = state_dict['fc.weight'].shape[0]
+  
+	# Load model with old classifier head
+	model.fc = torch.nn.Linear(model.fc.in_features, old_num_classes)
+	model.load_state_dict(state_dict)
+ 
+	# Backup old weights
+	old_fc_weights = model.fc.weight.data.clone()
+	old_fc_bias = model.fc.bias.data.clone()
+else:
+	old_fc_weights = None
+	old_fc_bias = None
 
-# === Selective unfreezing ===
+# Freeze all layers except the classifier and last block
 for name, param in model.named_parameters():
-  if "layer4" in name or "fc" in name:
-    param.requires_grad = True
-  else:
-    param.requires_grad = False
+	param.requires_grad = False
+ 
+	if "layer4" in name or "fc" in name:
+		param.requires_grad = True
 
-# === Replace final layer with new size and unfreeze it ===
-model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
+# Replace final classification layer with new size
+in_features = model.fc.in_features
+model.fc = torch.nn.Linear(in_features, num_classes)
+
+# Restore old weights if available
+if old_fc_weights is not None:
+	model.fc.weight.data[:old_fc_weights.shape[0]] = old_fc_weights
+	model.fc.bias.data[:old_fc_bias.shape[0]] = old_fc_bias
 
 # Move model to device AFTER modifying fc
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
 
-# === Step 4: Balanced Sampling ===
-labels = [label for _, label in dataset.samples]
-class_counts = Counter(labels)
-weights = [1.0 / class_counts[label] for label in labels]
-sampler = WeightedRandomSampler(weights, len(weights))
-loader = DataLoader(dataset, batch_size=4, sampler=sampler)
+# === Step 5: Dataloaders ===
+correction_loader = DataLoader(correction_dataset, batch_size=4, shuffle=True)
+replay_loader = DataLoader(replay_dataset, batch_size=4, shuffle=True)
 
 # === Step 5: Train ===
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=1e-4)
 
-for epoch in range(5):
-  running_loss = 0.0
-  for inputs, labels in loader:
-    inputs, labels = inputs.to(device), labels.to(device)
-    optimizer.zero_grad()
-    outputs = model(inputs)
-    loss = criterion(outputs, labels)
-    loss.backward()
-    optimizer.step()
-    running_loss += loss.item()
-  print(f"Epoch {epoch+1}: Loss = {running_loss:.4f}")
+print("🚀 Starting training...")
+for epoch in range(10):
+	model.train()
+	running_loss = 0.0
 
-# === Step 6: Save weights ===
+	for (inputs_c, labels_c), (inputs_r, labels_r) in zip(correction_loader, replay_loader):
+		inputs = torch.cat([inputs_c, inputs_r], dim=0).to(device)
+		labels = torch.cat([labels_c, labels_r], dim=0).to(device)
+
+		optimizer.zero_grad()
+		outputs = model(inputs)
+		loss = criterion(outputs, labels)
+		loss.backward()
+		optimizer.step()
+
+		running_loss += loss.item()
+
+	print(f"Epoch {epoch+1}: Loss = {running_loss:.4f}")
+
+# === Step 7: Save updated model ===
 torch.save(model.state_dict(), weights_path)
 print("✅ Model updated and saved.")
 
-# === Step 7: Move processed corrections ===
+# === Step 8: Move processed correction files ===
 processed_dir = os.path.join(corrections_dir, "processed")
 os.makedirs(processed_dir, exist_ok=True)
  
-for img_path, _ in dataset.samples:
-  
-  if corrections_dir not in img_path:
-    continue
-  
-  img_filename = os.path.basename(img_path)
-  json_filename = img_filename.replace(".jpg", ".json").replace(".png", ".json")
-  img_dest = os.path.join(processed_dir, img_filename)
-  json_dest = os.path.join(processed_dir, json_filename)
-  
-  # Move image file
-  if os.path.exists(img_path):
-    shutil.move(img_path, img_dest)
-    
-  # Move JSON label file
-  original_json_path = os.path.join(corrections_dir, json_filename)
-  if os.path.exists(original_json_path):
-    shutil.move(original_json_path, json_dest)
+for img_path, _ in correction_dataset.samples:
+    if corrections_dir not in img_path:
+        continue
+
+    img_filename = os.path.basename(img_path)
+    json_filename = img_filename.replace(".jpg", ".json").replace(".png", ".json")
+    img_dest = os.path.join(processed_dir, img_filename)
+    json_dest = os.path.join(processed_dir, json_filename)
+
+    if os.path.exists(img_path):
+        shutil.move(img_path, img_dest)
+
+    original_json_path = os.path.join(corrections_dir, json_filename)
+    if os.path.exists(original_json_path):
+        shutil.move(original_json_path, json_dest)
 
 print("✅ Processed correction files moved to 'corrections/processed/'.")
