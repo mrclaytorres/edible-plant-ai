@@ -8,6 +8,9 @@ import shutil
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 corrections_dir = os.path.join(script_dir, "corrections")
+replay_dir = os.path.join(script_dir, "replay_buffer")
+os.makedirs(corrections_dir, exist_ok=True)
+os.makedirs(replay_dir, exist_ok=True)
 
 # === Step 1: Load existing class map ===
 class_map_path = os.path.join(script_dir, "class_map.json")
@@ -17,9 +20,9 @@ if os.path.exists(class_map_path):
 else:
   existing_map = {}
 
-# === Step 2: Custom Dataset for new corrections ===
+# === Step 2: Custom Dataset with Replay Buffer ===
 class CorrectionDataset(Dataset):
-  def __init__(self, folder):
+  def __init__(self, folders):
     self.samples = []
     self.transform = transforms.Compose([
       transforms.Resize((224, 224)),
@@ -33,30 +36,29 @@ class CorrectionDataset(Dataset):
 
     next_id = max(name_to_id.values(), default=-1) + 1
 
-    for file in os.listdir(folder):
-      if file.endswith(".jpg") or file.endswith(".png"):
-        image_path = os.path.join(folder, file)
-        json_path = os.path.join(folder, file.replace(".jpg", ".json").replace(".png", ".json"))
+    for folder in folders:
+      for file in os.listdir(folder):
+        if file.endswith(".jpg") or file.endswith(".png"):
+          image_path = os.path.join(folder, file)
+          json_path = os.path.join(folder, file.replace(".jpg", ".json").replace(".png", ".json"))
+          if not os.path.exists(json_path):
+            continue
 
-        if not os.path.exists(json_path):
-          continue
+          with open(json_path) as jf:
+            label_data = json.load(jf)
+          plant_name = label_data["plant_name"].lower()
 
-        with open(json_path) as jf:
-          label_data = json.load(jf)
-        plant_name = label_data["plant_name"].lower()
+          if plant_name not in name_to_id:
+            name_to_id[plant_name] = next_id
+            existing_map[str(next_id)] = {
+              "plant_name": label_data["plant_name"],
+              "scientific_name": label_data.get("scientific_name", ""),
+              "edible": label_data.get("edible", True)
+            }
+            next_id += 1
 
-        # Update mapping if new plant found
-        if plant_name not in name_to_id:
-          name_to_id[plant_name] = next_id
-          existing_map[str(next_id)] = {
-            "plant_name": label_data["plant_name"],
-            "scientific_name": label_data.get("scientific_name", ""),
-            "edible": label_data.get("edible", True)
-          }
-          next_id += 1
-
-        label_id = name_to_id[plant_name]
-        self.samples.append((image_path, label_id))
+          label_id = name_to_id[plant_name]
+          self.samples.append((image_path, label_id))
 
     # Save updated class map
     with open(class_map_path, "w") as f:
@@ -82,7 +84,7 @@ with open(class_map_path) as f:
 num_classes = len(updated_class_map)
 
 # === Load model and adjust for new classes ===
-model = models.resnet50(pretrained=False)
+model = models.resnet50(pretrained=True)
 
 # Load existing weights if available
 weights_path = os.path.join(script_dir, "model_weights.pt")
