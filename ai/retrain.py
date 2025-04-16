@@ -73,7 +73,7 @@ class CorrectionDataset(Dataset):
     return image, label
 
 # === Step 3: Load model and adjust for new classes ===
-dataset = CorrectionDataset(corrections_dir)
+dataset = CorrectionDataset([corrections_dir, replay_dir])
 if len(dataset) == 0:
   print("No new correction data found.")
   exit()
@@ -95,9 +95,12 @@ if os.path.exists(weights_path):
   model.fc = torch.nn.Linear(model.fc.in_features, old_num_classes)
   model.load_state_dict(state_dict)
 
-# === Freeze all layers ===
-for param in model.parameters():
-  param.requires_grad = False
+# === Selective unfreezing ===
+for name, param in model.named_parameters():
+  if "layer4" in name or "fc" in name:
+    param.requires_grad = True
+  else:
+    param.requires_grad = False
 
 # === Replace final layer with new size and unfreeze it ===
 model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
